@@ -1,0 +1,64 @@
+# Welcome to Serverless!
+#
+# optional parameters
+#  - stage
+#  - region
+#
+
+service: sample-kinesis-data-streams
+frameworkVersion: '=1.26.1'
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'development'}
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 256
+  timeout: 300
+  logRetentionIndays: 10
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'kinesis:*'
+        - 'ssm:*'
+      Resource: '*'
+
+plugins:
+  - serverless-python-requirements
+
+# you can add packaging information here
+#package:
+#  include:
+#    - include-me.py
+#    - include-me-dir/**
+#  exclude:
+#    - exclude-me.py
+#    - exclude-me-dir/**
+
+functions:
+  getTweets:
+    handler: handlers.get_tweets
+    environment:
+      TWITTER_CONSUMER_KEY: /twitter/consumer_key
+      TWITTER_CONSUMER_SECRET: /twitter/consumer_secret
+      TWITTER_ACCESS_TOKEN: /twitter/access_token
+      TWITTER_ACCESS_TOKEN_SECRET: /twitter/access_token_secret
+    events:
+      - schedule:
+          name: GetTwitterTimeline
+          description: get twitter timeline data every
+          rate: rate(60 minutes)
+
+resources:
+  Resources:
+
+    TwitterStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: twitter-stream
+        ShardCount: 1
+
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"
