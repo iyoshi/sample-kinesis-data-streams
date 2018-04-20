@@ -8,3 +8,6 @@ TWITTER_ACCESS_TOKEN: str = os.environ.get(
     'TWITTER_ACCESS_TOKEN', 'twitter/access_token')
 TWITTER_ACCESS_TOKEN_SECRET: str = os.environ.get(
     'TWITTER_ACCESS_TOKEN_SECRET', '/twitter/access_token_secret')
+
+TWEET_DATA_TABLE = os.environ.get(
+    'TWEET_DATA_TABLE', 'TweetData')

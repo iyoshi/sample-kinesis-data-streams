@@ -21,6 +21,7 @@ provider:
       Action:
         - 'kinesis:*'
         - 'ssm:*'
+        - 'dynamodb:*'
       Resource: '*'
 
 plugins:
@@ -48,6 +49,18 @@ functions:
           name: GetTwitterTimeline
           description: get twitter timeline data every
           rate: rate(60 minutes)
+  saveTweets:
+    handler: handlers.save_tweet_data
+    environment:
+      TWEET_DATA_TABLE: TweetData
+    events:
+      - stream:
+          type: kinesis
+          arn:
+            Fn::GetAtt: [ 'TwitterStream', 'Arn' ]
+          batchSize: 5
+          startingPosition: LATEST
+          enabled: false
 
 resources:
   Resources:
@@ -57,6 +70,21 @@ resources:
       Properties:
         Name: twitter-stream
         ShardCount: 1
+
+    TwitterDataTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: TweetData
+        AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
 
 #  Outputs:
 #     NewOutput:

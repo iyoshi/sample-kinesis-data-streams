@@ -1,8 +1,10 @@
+import base64
 import json
 import logging
 import os
 
 import boto3
+from botocore.client import ClientError
 from TwitterAPI import TwitterAPI
 from botocore.exceptions import ClientError
 
@@ -50,6 +52,38 @@ def get_tweets(event, context):
             break
 
     logger.info('Complete getting tweets')
+
+def save_tweet_data(event, context):
+
+    logger.info('Initiate saving tweet data')
+
+    dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_DEFAULT_REGION'))
+    table = dynamodb.Table(config.TWEET_DATA_TABLE)
+    items = []
+    for record in event['Records']:
+        payload = base64.b64decode((record['kinesis']['data']))
+        data = json.loads(payload)
+
+        logger.debug('New data: {}'.format(json.dumps(data)))
+
+        new_item = {
+            'id': str(data['id']),
+            'timestamp': data['timestamp_ms'],
+            'text': data['text']
+        }
+
+        items.append(new_item)
+
+
+    try:
+        with table.batch_writer() as batch:
+            for item in items:
+                batch.put_item(Item=item)
+
+    except ClientError as e:
+        logger.error('AWS Error: {}'.format(e.response['Error']['Code']))
+
+        raise e
 
 
 def get_parameter(key: str) -> str:
